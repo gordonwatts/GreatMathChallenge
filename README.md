@@ -35,4 +35,6 @@ I thought this was going to be easy!
 	- This uses LINQ and AsParallel to go multithreaded
 	- Takes about 2 minutes on a SurfacePro 2.
 
+The whiteboard jpeg is mostly my kid's as we developed the algorithm. Sadly, I did all the coding
+(which you may not be able to tell!!).
 
