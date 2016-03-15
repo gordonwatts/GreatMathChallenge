@@ -7,9 +7,9 @@ using static System.Console;
 
 namespace GreatMathChallenge
 {
-    class Program
+    public class Program
     {
-        interface ITerm
+        public interface ITerm
         {
             double Calc();
 
@@ -23,11 +23,11 @@ namespace GreatMathChallenge
         /// <summary>
         /// A simple number
         /// </summary>
-        class Number : ITerm
+        public class Number : ITerm
         {
             private int _n;
 
-            public Number (int n)
+            public Number(int n)
             {
                 _n = n;
             }
@@ -55,8 +55,12 @@ namespace GreatMathChallenge
         /// <summary>
         /// Single operand operations (unary)
         /// </summary>
-        interface IUnaryOperation : ITerm
-        { }
+        public interface IUnaryOperation : ITerm
+        {
+            // True if this is going to compute something sensible.
+            // May cause evaluation of the arguments.
+            bool isOK();
+        }
 
         class PlusSign : IUnaryOperation
         {
@@ -81,9 +85,14 @@ namespace GreatMathChallenge
             {
                 return _t1.isNumber();
             }
+
+            public bool isOK()
+            {
+                return true;
+            }
         }
 
-        class MinusSign : IUnaryOperation
+        public class MinusSign : IUnaryOperation
         {
             private ITerm _t1;
 
@@ -106,20 +115,27 @@ namespace GreatMathChallenge
             {
                 return false;
             }
+
+            public bool isOK()
+            {
+                return true;
+            }
         }
 
         class SquareRoot : IUnaryOperation
         {
             private ITerm _t1;
+            private double _t1Value;
 
             public SquareRoot(ITerm t1)
             {
                 _t1 = t1;
+                _t1Value = _t1.Calc();
             }
 
             public double Calc()
             {
-                return Math.Sqrt(_t1.Calc());
+                return Math.Sqrt(_t1Value);
             }
 
             public override string ToString()
@@ -131,9 +147,14 @@ namespace GreatMathChallenge
             {
                 return false;
             }
+
+            public bool isOK()
+            {
+                return !double.IsNaN(_t1Value) && !double.IsInfinity(_t1Value) && _t1Value > 0;
+            }
         }
 
-        class AbsoluteValue : IUnaryOperation
+        public class AbsoluteValue : IUnaryOperation
         {
             private ITerm _t1;
 
@@ -156,33 +177,33 @@ namespace GreatMathChallenge
             {
                 return false;
             }
+
+            public bool isOK()
+            {
+                return true;
+            }
         }
 
-        class Factorial : IUnaryOperation
+        public class Factorial : IUnaryOperation
         {
             private ITerm _t1;
+            private double _value;
 
             public Factorial(ITerm t1)
             {
                 _t1 = t1;
+                _value = _t1.Calc();
             }
 
             public double Calc()
             {
-                // It has to be an integer!
-                var r = _t1.Calc();
-                if (r != (int)r || r < 0)
-                {
-                    return double.NaN;
-                }
-
-                if (r == 0)
+                if (_value == 0)
                 {
                     return 1;
                 }
 
                 var result = 1;
-                for (int i = (int)r; i > 0; i--)
+                for (int i = (int)_value; i > 0; i--)
                 {
                     result *= i;
                 }
@@ -203,6 +224,19 @@ namespace GreatMathChallenge
             {
                 return false;
             }
+
+            public bool isOK()
+            {
+                if (_value != (int)_value || _value < 0)
+                {
+                    return false;
+                }
+                if (_value > 500)
+                {
+                    return false;
+                }
+                return true;
+            }
         }
 
         /// <summary>
@@ -213,12 +247,12 @@ namespace GreatMathChallenge
 
         }
 
-        class Plus : IBinaryOperation
+        public class Plus : IBinaryOperation
         {
             private ITerm _t1;
             private ITerm _t2;
 
-            public Plus (ITerm t1, ITerm t2)
+            public Plus(ITerm t1, ITerm t2)
             {
                 _t1 = t1;
                 _t2 = t2;
@@ -309,7 +343,7 @@ namespace GreatMathChallenge
             }
         }
 
-        class Multiplication : IBinaryOperation
+        public class Multiplication : IBinaryOperation
         {
             private ITerm _t1;
             private ITerm _t2;
@@ -362,7 +396,7 @@ namespace GreatMathChallenge
                     return double.NaN;
                 }
 
-                var r =  Math.Pow(o1, o2);
+                var r = Math.Pow(o1, o2);
                 if (double.IsInfinity(r))
                 {
                     return double.NaN;
@@ -469,10 +503,10 @@ namespace GreatMathChallenge
                              from aCombo in AllBinaryOperations(t1, t2)
                              select aCombo;
 
-             var final2 = from t1 in combo0and1
-                        from t2 in combo2and3
-                        from r in AllBinaryOperations(t1, t2)
-                        select r;
+            var final2 = from t1 in combo0and1
+                         from t2 in combo2and3
+                         from r in AllBinaryOperations(t1, t2)
+                         select r;
 
             // do ((a ob b) op c) op d
             var combo01and2 = from t1 in combo0and1
@@ -485,19 +519,41 @@ namespace GreatMathChallenge
                          from aCombo in AllBinaryOperations(t1, t2)
                          select aCombo;
 
+            // Combine all sources, and allow the application of everything once more.
+            var final = from f in final1.AsParallel().Concat(final2.AsParallel()).Concat(final3.AsParallel())
+                        from rCombo in AllUnaryOperations(f)
+                        select rCombo;
+
             // Ready now to get all the answers.
             var answers = new Dictionary<int, string>();
 
-            var final = final1.Concat(final2).Concat(final3);
+            bool dumpEveryTime = false;
+            int numberFound = 0;
+
             foreach (var result in final)
             {
                 var rNumber = result.Calc();
-                if (rNumber >= 0 && rNumber <= 100 && ((int)rNumber == rNumber))
+                if (!double.IsNaN(rNumber)
+                    && !double.IsInfinity(rNumber)
+                    && rNumber >= 0
+                    && rNumber <= 100 
+                    && ((int)rNumber == rNumber))
                 {
                     var s = result.ToString();
-                    WriteLine($"{s} = {rNumber}");
 
-                    if (!answers.ContainsKey((int) rNumber))
+                    numberFound++;
+                    if (dumpEveryTime)
+                    {
+                        WriteLine($"{s} = {rNumber}");
+                    } else
+                    {
+                        if (numberFound % 10000 == 0)
+                        {
+                            WriteLine($"{numberFound}: {s} = {rNumber}  [We have {answers.Count} of 0-100 filled in]");
+                        }
+                    }
+
+                    if (!answers.ContainsKey((int)rNumber))
                     {
                         answers[(int)rNumber] = s;
                     } else
@@ -514,6 +570,7 @@ namespace GreatMathChallenge
             WriteLine();
             WriteLine("Answers in order, shortest picked when duplicates exist:");
             WriteLine($"Found {answers.Count} solutions.");
+            WriteLine($"Tried {numberFound} combinations.");
             foreach (var ans in answers.Keys.OrderBy(k => k))
             {
                 WriteLine($"{ans} = {answers[ans]}");
@@ -539,7 +596,7 @@ namespace GreatMathChallenge
         /// <param name="t1"></param>
         /// <param name="t2"></param>
         /// <returns></returns>
-        static IEnumerable<ITerm> AllBinaryOperations (ITerm t1, ITerm t2)
+        static IEnumerable<ITerm> AllBinaryOperations(ITerm t1, ITerm t2)
         {
             foreach (var g in allBinaryOperations)
             {
@@ -566,20 +623,52 @@ namespace GreatMathChallenge
                 t1 => new PlusSign(t1),
                 t1 => new MinusSign(t1),
                 t1 => new SquareRoot(t1),
-                t1 => new AbsoluteValue(t1),
+                //t1 => new AbsoluteValue(t1), // The plus and negative sign should take care of this.
                 t1 => new Factorial(t1),
         };
 
         /// <summary>
-        /// Generate all possible unary operations
+        /// Generate all possible unary operations. These can be applied on top of each other, so this is a bit of a recursive thing.
         /// </summary>
         /// <param name="t1"></param>
         /// <returns></returns>
-        static IEnumerable<ITerm> AllUnaryOperations(ITerm t1)
+        static public IEnumerable<ITerm> AllUnaryOperations(ITerm t1)
         {
-            foreach (var g in allUnaryOperations)
+            return ApplyUniaryOperationsRecursively(t1, allUnaryOperations.Length);
+        }
+
+        /// <summary>
+        /// Apply them one at a go.
+        /// </summary>
+        /// <param name="t1"></param>
+        /// <param name="allUnaryOperations"></param>
+        /// <returns></returns>
+        private static IEnumerable<ITerm> ApplyUniaryOperationsRecursively(ITerm t1, int count)
+        {
+            if (count == 0)
             {
-                yield return g(t1);
+                yield return t1;
+            }
+            else {
+                var didOne = false;
+                foreach (var g in allUnaryOperations)
+                {
+                    var allOtherApplications = ApplyUniaryOperationsRecursively(t1, count - 1);
+                    foreach (var item in allOtherApplications)
+                    {
+                        var r = g(item);
+                        if (r.isOK())
+                        {
+                            yield return r;
+                            didOne = true;
+                        }
+                    }
+                }
+
+                if (!didOne)
+                {
+                    yield return t1;
+                }
             }
         }
     }
