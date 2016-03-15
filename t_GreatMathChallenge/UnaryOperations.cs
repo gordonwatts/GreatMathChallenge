@@ -60,5 +60,17 @@ namespace t_GreatMathChallenge
             Assert.AreEqual("((-1 + |8|)*(9!*|6|))!", final.ToString());
             Assert.IsTrue(double.IsNaN(final.Calc()));
         }
+
+        [TestMethod]
+        public void NotZero()
+        {
+            // 0 = ((189) + 6)!
+            var plus = new Program.Plus(new Program.Number(189), new Program.Number(6));
+            var fac = new Program.Factorial(plus);
+
+            Assert.IsTrue(fac.isOK());
+
+            Assert.AreNotEqual(0.0, fac.Calc());
+        }
     }
 }

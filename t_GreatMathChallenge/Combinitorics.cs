@@ -32,7 +32,7 @@ namespace t_GreatMathChallenge
             {
                 Console.WriteLine(item);
             }
-            Assert.AreEqual(16, all.Count());
+            Assert.AreEqual(2, all.Count());
         }
     }
 }

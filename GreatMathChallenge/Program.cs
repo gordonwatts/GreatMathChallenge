@@ -236,7 +236,7 @@ namespace GreatMathChallenge
                     return 1;
                 }
 
-                var result = 1;
+                var result = 1.0;
                 for (int i = (int)_value; i > 0; i--)
                 {
                     result *= i;
@@ -501,6 +501,7 @@ namespace GreatMathChallenge
         static void Main(string[] args)
         {
             WriteLine("Great Math Challenge!");
+            WriteLine("Source code: https://github.com/gordonwatts/GreatMathChallenge");
 
             // Numbers we can use
             int[] numbers = { 1, 8, 9, 6 };
