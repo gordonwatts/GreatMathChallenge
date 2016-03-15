@@ -58,8 +58,16 @@ namespace GreatMathChallenge
         public interface IUnaryOperation : ITerm
         {
             // True if this is going to compute something sensible.
-            // May cause evaluation of the arguments.
+            // May cause evaluation of the arguments. Also, it must
+            // yield something new. If it just gives back the same number, then
+            // it isn't interesting.
             bool isOK();
+
+            /// <summary>
+            /// returns true if you apply this guy twice it will return the same thing.
+            /// </summary>
+            /// <returns></returns>
+            bool isFlipIdentity();
         }
 
         class PlusSign : IUnaryOperation
@@ -87,6 +95,11 @@ namespace GreatMathChallenge
             }
 
             public bool isOK()
+            {
+                return true;
+            }
+
+            public bool isFlipIdentity()
             {
                 return true;
             }
@@ -120,6 +133,11 @@ namespace GreatMathChallenge
             {
                 return true;
             }
+
+            public bool isFlipIdentity()
+            {
+                return true;
+            }
         }
 
         class SquareRoot : IUnaryOperation
@@ -148,9 +166,20 @@ namespace GreatMathChallenge
                 return false;
             }
 
+            /// <summary>
+            /// THe sqt of 1 is 1, which is the identity, so we yield nothing new.
+            /// </summary>
+            /// <returns></returns>
             public bool isOK()
             {
-                return !double.IsNaN(_t1Value) && !double.IsInfinity(_t1Value) && _t1Value > 0;
+                return !double.IsNaN(_t1Value) 
+                    && !double.IsInfinity(_t1Value) 
+                    && _t1Value > 1;
+            }
+
+            public bool isFlipIdentity()
+            {
+                return false;
             }
         }
 
@@ -179,6 +208,11 @@ namespace GreatMathChallenge
             }
 
             public bool isOK()
+            {
+                return true;
+            }
+
+            public bool isFlipIdentity()
             {
                 return true;
             }
@@ -235,7 +269,16 @@ namespace GreatMathChallenge
                 {
                     return false;
                 }
+                if (_value == 1 || _value == 2)
+                {
+                    return false;
+                }
                 return true;
+            }
+
+            public bool isFlipIdentity()
+            {
+                return false;
             }
         }
 
@@ -620,7 +663,7 @@ namespace GreatMathChallenge
         /// </summary>
         static Func<ITerm, IUnaryOperation>[] allUnaryOperations = new Func<ITerm, IUnaryOperation>[]
         {
-                t1 => new PlusSign(t1),
+                //t1 => new PlusSign(t1),
                 t1 => new MinusSign(t1),
                 t1 => new SquareRoot(t1),
                 //t1 => new AbsoluteValue(t1), // The plus and negative sign should take care of this.
@@ -634,7 +677,8 @@ namespace GreatMathChallenge
         /// <returns></returns>
         static public IEnumerable<ITerm> AllUnaryOperations(ITerm t1)
         {
-            return ApplyUniaryOperationsRecursively(t1, allUnaryOperations.Length);
+            return ApplyUniaryOperationsRecursively(t1, allUnaryOperations.Length)
+                .Unique(t => t.ToString());
         }
 
         /// <summary>
@@ -651,13 +695,33 @@ namespace GreatMathChallenge
             }
             else {
                 var didOne = false;
+                var allOtherApplications = ApplyUniaryOperationsRecursively(t1, count - 1);
+
+                // Do the identity
+                foreach (var item in allOtherApplications)
+                {
+                    yield return item;
+                }
+
+                // Now, do a nested one
                 foreach (var g in allUnaryOperations)
                 {
-                    var allOtherApplications = ApplyUniaryOperationsRecursively(t1, count - 1);
                     foreach (var item in allOtherApplications)
                     {
+                        // Now, see if we can go down a level.
                         var r = g(item);
-                        if (r.isOK())
+
+                        // Was the previous operation a unary operation? If so,
+                        // can this branch if:
+                        //   - They are the same, and a second application returns us to or is a duplicate
+                        //   - The plus operation on any other unary operation
+                        //   - The operation is not OK.
+
+                        bool avoidUnaryBranch =
+                            !r.isOK()
+                            || ((item is IUnaryOperation) && (item.GetType() == r.GetType() && r.isFlipIdentity()));
+
+                        if (!avoidUnaryBranch)
                         {
                             yield return r;
                             didOne = true;
