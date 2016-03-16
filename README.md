@@ -15,16 +15,15 @@ find an equation that totals 0, 1, 2, etc., to 100. You may use the following op
    
 Here is a sample of the output:
 
-	Found 71 solutions.
-	Tried 51525 combinations.
-	0 = (((1 + 8) - 9)/6)
+	Found 91 solutions.
+	Tried 2026228 combinations.
+	0 = (1 - ((8 - 9)^6))
 	1 = (1^(896))
 	2 = ((1^8)/(sq(9)/6))
-	3 = ((1^8)*(9 - 6))
-	4 = -(((18)/9) - 6)
-	5 = -(((1^8)^9) - 6)
-	6 = (((1^8)^9)*6)
-	7 = (((1^8)^9) + 6)
+	3 = ((18)/(9 - 6)!)
+	4 = (-((18)/9) + 6)
+	5 = -((1^(89)) - 6)
+	6 = ((1^(89))*6)
 
 # Code
 
@@ -33,7 +32,7 @@ I thought this was going to be easy!
     - The number of combinations explodes when you consider nested unary
 	- Some work has been done to prune the combinations - hopefully there are no bugs
 	- This uses LINQ and AsParallel to go multithreaded
-	- Takes about 2 minutes on a SurfacePro 2.
+	- Takes awhile to run on a Surface Pro 2 (at least 30 minutes, didn't time it beyond that)
 
 The whiteboard jpeg is mostly my kid's as we developed the algorithm. Sadly, I did all the coding
 (which you may not be able to tell!!).
