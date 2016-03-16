@@ -29,5 +29,22 @@ namespace GreatMathChallenge
                 }
             }
         }
+
+        /// <summary>
+        /// Flatten a sequence of sequences.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sources"></param>
+        /// <returns></returns>
+        public static IEnumerable<T> ConcatSequences<T> (this IEnumerable<IEnumerable<T>> sources)
+        {
+            foreach (var s in sources)
+            {
+                foreach (var item in s)
+                {
+                    yield return item;
+                }
+            }
+        }
     }
 }

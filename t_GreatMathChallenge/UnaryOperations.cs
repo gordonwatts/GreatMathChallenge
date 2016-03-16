@@ -72,5 +72,20 @@ namespace t_GreatMathChallenge
 
             Assert.AreNotEqual(0.0, fac.Calc());
         }
+
+        [TestMethod]
+        public void NotOneQithSquarte()
+        {
+            // (-sq(-(1 - 8!))^-(sq(sq(9)!) - sq(6))) = 1
+            var neg_sqrt = new Program.MinusSign(new Program.SquareRoot(new Program.MinusSign(new Program.Minus( new Program.Number(1), new Program.Factorial(new Program.Number(8))))));
+
+            var pro_power = new Program.Minus(new Program.SquareRoot(new Program.Factorial(new Program.SquareRoot(new Program.Number(9)))), new Program.SquareRoot(new Program.Number(6)));
+
+            var r = new Program.Exponent(neg_sqrt, new Program.MinusSign(pro_power));
+
+            Assert.AreEqual("(-sq(-(1 - 8!))^-(sq(sq(9)!) - sq(6)))", r.ToString());
+
+            Assert.AreNotEqual(1.0, r.Calc());
+        }
     }
 }

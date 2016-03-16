@@ -140,7 +140,7 @@ namespace GreatMathChallenge
             }
         }
 
-        class SquareRoot : IUnaryOperation
+        public class SquareRoot : IUnaryOperation
         {
             private ITerm _t1;
             private double _t1Value;
@@ -317,7 +317,7 @@ namespace GreatMathChallenge
             }
         }
 
-        class Minus : IBinaryOperation
+        public class Minus : IBinaryOperation
         {
             private ITerm _t1;
             private ITerm _t2;
@@ -413,7 +413,7 @@ namespace GreatMathChallenge
             }
         }
 
-        class Exponent : IBinaryOperation
+        public class Exponent : IBinaryOperation
         {
             private ITerm _t1;
             private ITerm _t2;
@@ -525,46 +525,26 @@ namespace GreatMathChallenge
             /// Start the combinatoric loop. We do three of them.
             /// 
 
-            // do a op (b op (c op d)
-            var combo2and3 = from t1 in AllUnaryOperations(allNumbers[2])
-                             from t2 in AllUnaryOperations(allNumbers[3])
-                             from aCombo in AllBinaryOperations(t1, t2)
-                             select aCombo;
+            var allCombos = new IEnumerable<ITerm>[] {
+                // (a op b) op (c op d)
+                Group(Group(allNumbers[0], allNumbers[1]), Group(allNumbers[2], allNumbers[3])),
 
-            var combo1and23 = from t1 in AllUnaryOperations(allNumbers[1])
-                              from t2 in combo2and3
-                              from aCombo in AllBinaryOperations(t1, t2)
-                              select aCombo;
+                // a op ((b op c) op d)
+                Group(allNumbers[0], Group(Group(allNumbers[1], allNumbers[2]), allNumbers[3])),
+                // a op (b op (c op d))
+                Group(allNumbers[0], Group(allNumbers[1], Group(allNumbers[2], allNumbers[3]))),
 
-            var final1 = from t1 in AllUnaryOperations(allNumbers[0])
-                         from t2 in combo1and23
-                         from aCombo in AllBinaryOperations(t1, t2)
-                         select aCombo;
-
-            // Do (a op b) op (c op d)
-            var combo0and1 = from t1 in AllUnaryOperations(allNumbers[0])
-                             from t2 in AllUnaryOperations(allNumbers[1])
-                             from aCombo in AllBinaryOperations(t1, t2)
-                             select aCombo;
-
-            var final2 = from t1 in combo0and1
-                         from t2 in combo2and3
-                         from r in AllBinaryOperations(t1, t2)
-                         select r;
-
-            // do ((a ob b) op c) op d
-            var combo01and2 = from t1 in combo0and1
-                              from t2 in AllUnaryOperations(allNumbers[2])
-                              from aCombo in AllBinaryOperations(t1, t2)
-                              select aCombo;
-
-            var final3 = from t1 in combo01and2
-                         from t2 in AllUnaryOperations(allNumbers[3])
-                         from aCombo in AllBinaryOperations(t1, t2)
-                         select aCombo;
+                // (a op (b op c)) op d
+                Group(Group(allNumbers[0], Group(allNumbers[1], allNumbers[2])), allNumbers[3]),
+                // ((a op b) op c) op d
+                Group(Group(Group(allNumbers[0], allNumbers[1]), allNumbers[2]), allNumbers[3]),
+            };
 
             // Combine all sources, and allow the application of everything once more.
-            var final = from f in final1.AsParallel().Concat(final2.AsParallel()).Concat(final3.AsParallel())
+            var finalCombo = allCombos
+                .ConcatSequences();
+
+            var final = from f in finalCombo.AsParallel()
                         from rCombo in AllUnaryOperations(f)
                         select rCombo;
 
@@ -619,6 +599,48 @@ namespace GreatMathChallenge
             {
                 WriteLine($"{ans} = {answers[ans]}");
             }
+        }
+
+        /// <summary>
+        /// Short hand for doing t1 op t2.
+        /// </summary>
+        /// <param name="t1"></param>
+        /// <param name="t2"></param>
+        /// <returns></returns>
+        static IEnumerable<ITerm> Group (ITerm t1, ITerm t2)
+        {
+            return from i1 in AllUnaryOperations(t1)
+                   from i2 in AllUnaryOperations(t2)
+                   from aCombo in AllBinaryOperations(i1, i2)
+                   select aCombo;
+        }
+
+        static IEnumerable<ITerm> Group(IEnumerable<ITerm> iter_t1, IEnumerable<ITerm> iter_t2)
+        {
+            return from t1 in iter_t1
+                   from i1 in AllUnaryOperations(t1)
+                   from t2 in iter_t2
+                   from i2 in AllUnaryOperations(t2)
+                   from aCombo in AllBinaryOperations(i1, i2)
+                   select aCombo;
+        }
+
+        static IEnumerable<ITerm> Group(ITerm t1, IEnumerable<ITerm> iter_t2)
+        {
+            return from i1 in AllUnaryOperations(t1)
+                   from t2 in iter_t2
+                   from i2 in AllUnaryOperations(t2)
+                   from aCombo in AllBinaryOperations(i1, i2)
+                   select aCombo;
+        }
+
+        static IEnumerable<ITerm> Group(IEnumerable<ITerm> iter_t1, ITerm t2)
+        {
+            return from t1 in iter_t1
+                   from i1 in AllUnaryOperations(t1)
+                   from i2 in AllUnaryOperations(t2)
+                   from aCombo in AllBinaryOperations(i1, i2)
+                   select aCombo;
         }
 
         /// <summary>
